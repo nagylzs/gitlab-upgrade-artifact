@@ -49,6 +49,34 @@ jobs:
       run: |
         go build -o gitlab-upgrade-artifact-linux-arm64 cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
 
+    - name: Build Windows Amd64
+      env:
+        GOOS: windows
+        GOARCH: amd64
+      run: |
+        go build -o gitlab-upgrade-artifact-windows-amd64.exe cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
+
+    - name: Build Windows i386
+      env:
+        GOOS: windows
+        GOARCH: 386
+      run: |
+        go build -o gitlab-upgrade-artifact-windows-i386.exe cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
+
+    - name: Build Windows Arm
+      env:
+        GOOS: windows
+        GOARCH: arm
+      run: |
+        go build -o gitlab-upgrade-artifact-windows-arm.exe cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
+
+    - name: Build Windows arm64
+      env:
+        GOOS: windows
+        GOARCH: arm64
+      run: |
+        go build -o gitlab-upgrade-artifact-windows-arm64.exe cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
+
     - name: 'Upload Linux Artifact Amd64'
       uses: actions/upload-artifact@v4
       with:
@@ -75,5 +103,33 @@ jobs:
       with:
         name: gitlab-upgrade-artifact-linux-arm64
         path: gitlab-upgrade-artifact-linux-arm64
+        retention-days: 5
+
+    - name: 'Upload Linux Windows Amd64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitlab-upgrade-artifact-windows-amd64.exe
+        path: gitlab-upgrade-artifact-windows-amd64.exe
+        retention-days: 5
+
+    - name: 'Upload Windows Artifact i386'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitlab-upgrade-artifact-windows-i386.exe
+        path: gitlab-upgrade-artifact-windows-i386.exe
+        retention-days: 5
+
+    - name: 'Upload Windows Artifact arm'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitlab-upgrade-artifact-windows-arm.exe
+        path: gitlab-upgrade-artifact-windows-arm.exe
+        retention-days: 5
+
+    - name: 'Upload Windows Artifact arm64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitlab-upgrade-artifact-windows-arm64.exe
+        path: gitlab-upgrade-artifact-windows-arm64.exe
         retention-days: 5
 
