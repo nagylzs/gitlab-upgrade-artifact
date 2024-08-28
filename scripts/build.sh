@@ -4,8 +4,8 @@ DIR="$(dirname $(realpath $0))"
 DIST=${DIR}/../dist
 
 if [ $1 == "all" ]; then
-    oss=(linux)
-    archs=(amd64)
+    oss=(linux windows freebsd netbsd openbsd)
+    archs=(amd64 386 arm arm64)
 else
     eval $(go tool dist env)
     oss=($GOOS)
@@ -31,9 +31,6 @@ fi
 
 mkdir -p ${DIST}
 echo "$BUILT $HEAD" > ${DIST}/version.txt
-
-mkdir -p internal/httpd/admin_webroot
-mkdir -p internal/httpd/dl_webroot
 
 for os in ${oss[@]}
 do
