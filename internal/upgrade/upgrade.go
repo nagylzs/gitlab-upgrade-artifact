@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 	"github.com/nagylzs/gitlab-upgrade-artifact/internal/config"
 	"io"
 	"log/slog"
@@ -44,8 +46,14 @@ func (u *Upgrader) Upgrade() error {
 	} else {
 		programLevel.Set(slog.LevelWarn)
 	}
-	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: programLevel})
-	slog.SetDefault(slog.New(h))
+	w := os.Stderr
+	logger := slog.New(
+		tint.NewHandler(w, &tint.Options{
+			NoColor: !isatty.IsTerminal(w.Fd()),
+			Level:   programLevel,
+		}),
+	)
+	slog.SetDefault(logger)
 
 	// https://docs.gitlab.com/ee/api/jobs.html#list-project-jobs
 	slug := url.PathEscape(u.Opts.Group + "/" + u.Opts.Project)
