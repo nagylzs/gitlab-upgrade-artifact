@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	var opts = config.CLIArgs{RequestTimeout: 10}
+	var opts = config.CLIArgs{RequestTimeout: 10, DownloadTimeout: 120}
 	args, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
 		_, _ = os.Stderr.WriteString(err.Error() + "\n")

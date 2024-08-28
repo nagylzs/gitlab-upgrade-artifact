@@ -55,5 +55,9 @@ func checkOpts(opts *config.CLIArgs) error {
 		return fmt.Errorf("--request-timeout cannot be less than 1 (second)")
 	}
 
+	if opts.DownloadTimeout < 5 {
+		return fmt.Errorf("--download-timeout cannot be less than 5 (second)")
+	}
+
 	return nil
 }

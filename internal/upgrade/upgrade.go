@@ -4,10 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nagylzs/gitlab-upgrade-artifact/internal/config"
-	"net/http"
 	"net/url"
+	"os"
 	"strconv"
-	"time"
 )
 
 type Upgrader struct {
@@ -16,7 +15,6 @@ type Upgrader struct {
 	artifact string // artifact path, in gitlab
 	output   string // output path, local file name
 	jobFile  string // job file path, a JSON that stores data about the local file's version
-	cl       *http.Client
 }
 
 func (u *Upgrader) Upgrade() error {
@@ -35,8 +33,6 @@ func (u *Upgrader) Upgrade() error {
 		u.jobFile = u.output + ".job.json"
 	}
 
-	u.cl = &http.Client{Timeout: time.Second * time.Duration(u.Opts.RequestTimeout)}
-
 	// https://docs.gitlab.com/ee/api/jobs.html#list-project-jobs
 	slug := url.PathEscape(u.Opts.Group + "/" + u.Opts.Project)
 	jobListUrl := u.Opts.Server + "/api/v4/projects/" + slug + "/jobs"
@@ -53,8 +49,9 @@ func (u *Upgrader) Upgrade() error {
 	// GET /projects/:id/jobs/:job_id/artifacts/*artifact_path
 	var commit JobListCommit
 	ok := false
+	var artifactUrl string
 	for _, job := range jobs {
-		artifactUrl := u.Opts.Server + "/api/v4/projects/" + slug + "/jobs/" + strconv.Itoa(job.Id) + "/artifacts/" + u.artifact
+		artifactUrl = u.Opts.Server + "/api/v4/projects/" + slug + "/jobs/" + strconv.Itoa(job.Id) + "/artifacts/" + u.artifact
 		r, err := head(u, artifactUrl)
 		if err != nil {
 			return err
@@ -72,8 +69,12 @@ func (u *Upgrader) Upgrade() error {
 	if !ok {
 		return errors.New("artifact '" + u.artifact + "' not found in any job")
 	}
-	fmt.Println(commit)
-	// TODO: compare/fetch/upgrade here
+	fmt.Printf("%v\n", commit)
 
-	return nil
+	out, err := os.Create(u.output)
+	if err != nil {
+		return fmt.Errorf("could not open output file '%v' for writing: %w", u.output, err)
+	}
+	defer out.Close()
+	return getDownload(u, artifactUrl, out)
 }
