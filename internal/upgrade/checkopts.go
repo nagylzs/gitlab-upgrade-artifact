@@ -47,8 +47,18 @@ func checkOpts(opts *config.CLIArgs) error {
 			return fmt.Errorf("--job is required")
 		}
 	}
-	if opts.Debug && opts.Verbose {
-		return fmt.Errorf("cannot combine --debug and --verbose")
+	cnt := 0
+	if opts.Silent {
+		cnt += 1
+	}
+	if opts.Verbose {
+		cnt += 1
+	}
+	if opts.Debug {
+		cnt += 1
+	}
+	if cnt > 1 {
+		return fmt.Errorf("only one of --debug --verbose and --silent can be given")
 	}
 
 	if opts.RequestTimeout < 1 {

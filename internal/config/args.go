@@ -8,7 +8,8 @@ type CLIArgs struct {
 	Branch          string `short:"b" long:"branch" description:"Gitlab branch, defaults to GITLAB_BRANCH env, or 'main'"`
 	Job             string `short:"j" long:"job" description:"Gitlab job, defaults to GITLAB_JOB env"`
 	Force           bool   `short:"f" long:"force" description:"Force download, even if not changed"`
-	Verbose         bool   `short:"v" long:"verbose" description:"Be verbose"`
+	Silent          bool   `long:"silent" description:"Be silent, only errors are logged"`
+	Verbose         bool   `short:"v" long:"verbose" description:"Be verbose, warnings and errors are logged"`
 	Debug           bool   `short:"d" long:"debug" description:"Debug messages"`
 	ShowVersion     bool   `long:"version" description:"Show version information and exit"`
 	RequestTimeout  int    `long:"request-timeout" description:"Request timeout in seconds, for JSON API http requests"`

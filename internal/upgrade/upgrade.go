@@ -43,6 +43,8 @@ func (u *Upgrader) Upgrade() error {
 		programLevel.Set(slog.LevelDebug)
 	} else if u.Opts.Verbose {
 		programLevel.Set(slog.LevelInfo)
+	} else if u.Opts.Silent {
+		programLevel.Set(slog.LevelError)
 	} else {
 		programLevel.Set(slog.LevelWarn)
 	}
@@ -154,8 +156,8 @@ func (u *Upgrader) fileChanged(commit JobListCommit) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	slog.Info("Old commit", "hash", commitOld.Id, "message", commitOld.Message)
-	slog.Info("New commit", "hash", commit.Id, "message", commit.Message)
+	slog.Info("Old commit", "created_at", commit.CreatedAt, "hash", commitOld.Id, "message", commitOld.Message)
+	slog.Info("New commit", "created_at", commit.CreatedAt, "hash", commit.Id, "message", commit.Message)
 	changed := commitOld.Id != commit.Id
 	if changed {
 		slog.Info("CHANGED")
