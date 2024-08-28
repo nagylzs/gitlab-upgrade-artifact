@@ -13,10 +13,10 @@ import (
 type Upgrader struct {
 	Opts     *config.CLIArgs
 	Args     []string
-	artifact string
-	ouptut   string
-
-	cl *http.Client
+	artifact string // artifact path, in gitlab
+	output   string // output path, local file name
+	jobFile  string // job file path, a JSON that stores data about the local file's version
+	cl       *http.Client
 }
 
 func (u *Upgrader) Upgrade() error {
@@ -24,11 +24,17 @@ func (u *Upgrader) Upgrade() error {
 	if err != nil {
 		return err
 	}
-	if len(u.Args) != 3 {
-		return errors.New("upgrade requires 2 positional arguments: artifact_name and output_file")
+	if len(u.Args) < 3 || len(u.Args) > 4 {
+		return errors.New("positional arguments are: artifact_path output_path [job_file]")
 	}
 	u.artifact = u.Args[1]
-	u.ouptut = u.Args[2]
+	u.output = u.Args[2]
+	if len(u.Args) > 3 {
+		u.jobFile = u.Args[3]
+	} else {
+		u.jobFile = u.output + ".job.json"
+	}
+
 	u.cl = &http.Client{Timeout: time.Second * time.Duration(u.Opts.RequestTimeout)}
 
 	// https://docs.gitlab.com/ee/api/jobs.html#list-project-jobs
