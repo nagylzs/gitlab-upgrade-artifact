@@ -1,9 +1,12 @@
 package upgrade
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/nagylzs/gitlab-upgrade-artifact/internal/config"
+	"io"
+	"log/slog"
 	"net/url"
 	"os"
 	"strconv"
@@ -33,9 +36,21 @@ func (u *Upgrader) Upgrade() error {
 		u.jobFile = u.output + ".job.json"
 	}
 
+	var programLevel = new(slog.LevelVar)
+	if u.Opts.Debug {
+		programLevel.Set(slog.LevelDebug)
+	} else if u.Opts.Verbose {
+		programLevel.Set(slog.LevelInfo)
+	} else {
+		programLevel.Set(slog.LevelWarn)
+	}
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: programLevel})
+	slog.SetDefault(slog.New(h))
+
 	// https://docs.gitlab.com/ee/api/jobs.html#list-project-jobs
 	slug := url.PathEscape(u.Opts.Group + "/" + u.Opts.Project)
 	jobListUrl := u.Opts.Server + "/api/v4/projects/" + slug + "/jobs"
+	slog.Debug("Listing jobs", "url", jobListUrl)
 	var jobs []JobListItem
 	err = getAndDecode(u, jobListUrl, &jobs)
 	if err != nil {
@@ -50,8 +65,9 @@ func (u *Upgrader) Upgrade() error {
 	var commit JobListCommit
 	ok := false
 	var artifactUrl string
-	for _, job := range jobs {
+	for idx, job := range jobs {
 		artifactUrl = u.Opts.Server + "/api/v4/projects/" + slug + "/jobs/" + strconv.Itoa(job.Id) + "/artifacts/" + u.artifact
+		slog.Debug("Examine job", "idx", idx, "url", artifactUrl)
 		r, err := head(u, artifactUrl)
 		if err != nil {
 			return err
@@ -69,12 +85,74 @@ func (u *Upgrader) Upgrade() error {
 	if !ok {
 		return errors.New("artifact '" + u.artifact + "' not found in any job")
 	}
-	fmt.Printf("%v\n", commit)
 
+	changed, err := u.fileChanged(commit)
+	if err != nil {
+		return err
+	}
+	if !changed && !u.Opts.Force {
+		return nil
+	}
+	if u.Opts.Force {
+		slog.Warn("Forcing artifact update")
+	}
+
+	slog.Debug("Creating local file", "path", u.output)
 	out, err := os.Create(u.output)
 	if err != nil {
 		return fmt.Errorf("could not open output file '%v' for writing: %w", u.output, err)
 	}
 	defer out.Close()
-	return getDownload(u, artifactUrl, out)
+	slog.Debug("Downloading local file", "path", u.output)
+	err = getDownload(u, artifactUrl, out)
+	if err != nil {
+		return err
+	}
+	slog.Debug("Creating json file", "path", u.jobFile)
+	jobFile, err := os.Create(u.jobFile)
+	if err != nil {
+		return fmt.Errorf("could not open output file '%v' for writing: %w", u.jobFile, err)
+	}
+	defer jobFile.Close()
+	slog.Debug("Writing json file", "path", u.jobFile)
+	data, err := json.Marshal(commit)
+	if err != nil {
+		return err
+	}
+	_, err = jobFile.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *Upgrader) fileChanged(commit JobListCommit) (bool, error) {
+	jsonFile, err := os.Open(u.jobFile)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return false, err
+		}
+		slog.Debug("No json file yet", "path", u.jobFile)
+		return true, nil
+	}
+	defer jsonFile.Close()
+	data, err := io.ReadAll(jsonFile)
+	if err != nil {
+		return false, err
+	}
+	var commitOld JobListCommit
+	err = json.Unmarshal(data, &commitOld)
+	if err != nil {
+		return false, err
+	}
+	slog.Info("Old commit", "hash", commitOld.Id, "message", commitOld.Message)
+	slog.Info("New commit", "hash", commit.Id, "message", commit.Message)
+	changed := commitOld.Id != commit.Id
+	if changed {
+		slog.Info("CHANGED")
+	} else {
+		slog.Info("UNCHANGED")
+	}
+	return changed, nil
 }
