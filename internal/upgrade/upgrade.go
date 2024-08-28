@@ -48,7 +48,7 @@ func (u *Upgrader) Upgrade() error {
 	var commit JobListCommit
 	ok := false
 	for _, job := range jobs {
-		artifactUrl := u.Opts.Server + "/api/v4/projects/" + slug + "/jobs/" + strconv.Itoa(job.Id) + "/artifacts" + u.artifact
+		artifactUrl := u.Opts.Server + "/api/v4/projects/" + slug + "/jobs/" + strconv.Itoa(job.Id) + "/artifacts/" + u.artifact
 		r, err := head(u, artifactUrl)
 		if err != nil {
 			return err
