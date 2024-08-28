@@ -3,6 +3,7 @@ package upgrade
 import (
 	"encoding/json"
 	"errors"
+	"github.com/schollz/progressbar/v3"
 	"io"
 	"net/http"
 	"time"
@@ -58,6 +59,14 @@ func getDownload(u *Upgrader, getUrl string, output io.WriteCloser) error {
 		return errors.New(r.Status)
 	}
 
-	_, err = io.Copy(output, r.Body)
+	if u.Opts.Verbose || u.Opts.Debug {
+		bar := progressbar.DefaultBytes(
+			r.ContentLength,
+			"downloading",
+		)
+		_, err = io.Copy(io.MultiWriter(output, bar), r.Body)
+	} else {
+		_, err = io.Copy(output, r.Body)
+	}
 	return err
 }
