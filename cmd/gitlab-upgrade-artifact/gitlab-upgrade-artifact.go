@@ -3,12 +3,13 @@ package main
 import (
 	"github.com/jessevdk/go-flags"
 	"github.com/nagylzs/gitlab-upgrade-artifact/internal/config"
+	"github.com/nagylzs/gitlab-upgrade-artifact/internal/upgrade"
 	"github.com/nagylzs/gitlab-upgrade-artifact/internal/version"
 	"os"
 )
 
 func main() {
-	var opts = config.CLIArgs{}
+	var opts = config.CLIArgs{RequestTimeout: 10}
 	args, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
 		_, _ = os.Stderr.WriteString(err.Error() + "\n")
@@ -20,14 +21,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	err = doMain(opts, args)
+	err = upgrade.Upgrade(&opts, args)
 	if err != nil {
 		_, _ = os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(1)
 	}
 
-}
-
-func doMain(opts config.CLIArgs, args []string) error {
-	return nil
 }
