@@ -1,41 +1,73 @@
 package upgrade
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/nagylzs/gitlab-upgrade-artifact/internal/config"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
-func Upgrade(opts *config.CLIArgs, args []string) error {
-	err := checkOpts(opts)
+type Upgrader struct {
+	Opts     *config.CLIArgs
+	Args     []string
+	artifact string
+	ouptut   string
+
+	cl *http.Client
+}
+
+func (u *Upgrader) Upgrade() error {
+	err := checkOpts(u.Opts)
 	if err != nil {
 		return err
 	}
-
-	cl := &http.Client{Timeout: time.Second * time.Duration(opts.RequestTimeout)}
+	if len(u.Args) != 3 {
+		return errors.New("upgrade requires 2 positional arguments: artifact_name and output_file")
+	}
+	u.artifact = u.Args[1]
+	u.ouptut = u.Args[2]
+	u.cl = &http.Client{Timeout: time.Second * time.Duration(u.Opts.RequestTimeout)}
 
 	// https://docs.gitlab.com/ee/api/jobs.html#list-project-jobs
-	slug := url.PathEscape(opts.Group + "/" + opts.Project)
-	jobListUrl := opts.Server + "/api/v4/projects/" + slug + "/jobs"
-
-	req, err := http.NewRequest("GET", jobListUrl, nil)
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("PRIVATE-TOKEN", opts.Token)
-	r, err := cl.Do(req)
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-
+	slug := url.PathEscape(u.Opts.Group + "/" + u.Opts.Project)
+	jobListUrl := u.Opts.Server + "/api/v4/projects/" + slug + "/jobs"
 	var jobs []JobListItem
-	err = json.NewDecoder(r.Body).Decode(&jobs)
+	err = getAndDecode(u, jobListUrl, &jobs)
 	if err != nil {
 		return err
 	}
-	fmt.Println(jobs)
+
+	// We go over the jobs here, and get the artifact from the latest one.
+	// https://docs.gitlab.com/ee/api/job_artifacts.html#download-a-single-artifact-file-from-specific-tag-or-branch
+	// GET /projects/:id/jobs/artifacts/:ref_name/raw/*artifact_path?job=name
+	// https://docs.gitlab.com/ee/api/job_artifacts.html#download-a-single-artifact-file-by-job-id
+	// GET /projects/:id/jobs/:job_id/artifacts/*artifact_path
+	var commit JobListCommit
+	ok := false
+	for _, job := range jobs {
+		artifactUrl := u.Opts.Server + "/api/v4/projects/" + slug + "/jobs/" + strconv.Itoa(job.Id) + "/artifacts" + u.artifact
+		r, err := head(u, artifactUrl)
+		if err != nil {
+			return err
+		}
+		if r.StatusCode == 404 {
+			continue
+		}
+		if r.StatusCode != 200 {
+			return errors.New(r.Status)
+		}
+		commit = job.Commit
+		ok = true
+		break
+	}
+	if !ok {
+		return errors.New("artifact '" + u.artifact + "' not found in any job")
+	}
+	fmt.Println(commit)
+	// TODO: compare/fetch/upgrade here
 
 	return nil
 }

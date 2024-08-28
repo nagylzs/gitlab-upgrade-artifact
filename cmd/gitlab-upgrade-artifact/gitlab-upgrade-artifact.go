@@ -21,7 +21,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	err = upgrade.Upgrade(&opts, args)
+	u := upgrade.Upgrader{Opts: &opts, Args: args}
+	err = u.Upgrade()
 	if err != nil {
 		_, _ = os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(1)
