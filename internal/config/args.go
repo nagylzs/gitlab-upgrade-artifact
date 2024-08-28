@@ -14,4 +14,11 @@ type CLIArgs struct {
 	ShowVersion     bool   `long:"version" description:"Show version information and exit"`
 	RequestTimeout  int    `long:"request-timeout" description:"Request timeout in seconds, for JSON API http requests"`
 	DownloadTimeout int    `long:"download-timeout" description:"Download timeout in seconds, for artifact download http requests"`
+
+	Args struct {
+		ProgName     string
+		ArtifactName string `positional-arg-name:"artifact-name" description:"Artifact name"`
+		OutputFile   string `positional-arg-name:"output-file" description:"Output file"`
+		JsonFile     string `positional-arg-name:"job-json-file" description:"JSON file that stores commit hash for the current version. When not given, defaults to output-file+'.job.json'"`
+	} `positional-args:"yes"`
 }

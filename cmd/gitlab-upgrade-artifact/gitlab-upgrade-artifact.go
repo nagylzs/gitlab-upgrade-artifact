@@ -10,7 +10,7 @@ import (
 
 func main() {
 	var opts = config.CLIArgs{RequestTimeout: 10, DownloadTimeout: 120}
-	args, err := flags.ParseArgs(&opts, os.Args)
+	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
 		_, _ = os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(1)
@@ -21,7 +21,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	u := upgrade.Upgrader{Opts: &opts, Args: args}
+	u := upgrade.Upgrader{Opts: &opts}
 	err = u.Upgrade()
 	if err != nil {
 		_, _ = os.Stderr.WriteString(err.Error() + "\n")

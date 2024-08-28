@@ -41,13 +41,17 @@ do
         for cmd in ${cmds[@]}
         do
             cd ${DIR}/../cmd/${cmd}
+            ext=""
+            if [ "$os" == "windows" ]; then
+              ext=".exe"
+            fi
             env GOOS=${os} GOARCH=${arch} \
                 go build \
                     -ldflags "
                         -X github.com/nagylzs/grimdam-upgrade-artifact/internal/version.Built=${BUILT}
                         -X github.com/nagylzs/grimdam-upgrade-artifact/internal/version.Commit=${COMMIT}
                         -X github.com/nagylzs/grimdam-upgrade-artifact/internal/version.Branch=${BRANCH}" \
-                    -o ${output_dir}/ ${cmd}.go
+                    -o ${output_dir}/${cmd}-${os}-${arch}${ext} ${cmd}.go
         done
     done
 done
