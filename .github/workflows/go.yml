@@ -1,0 +1,79 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+
+    - name: Build Linux Amd64
+      env:
+        GOOS: linux
+        GOARCH: amd64
+      run: |
+        go build -o gitlab-upgrade-artifact-linux-amd64 cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
+
+    - name: Build Linux i386
+      env:
+        GOOS: linux
+        GOARCH: 386
+      run: |
+        go build -o gitlab-upgrade-artifact-linux-i386 cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
+
+    - name: Build Linux Arm
+      env:
+        GOOS: linux
+        GOARCH: arm
+      run: |
+        go build -o gitlab-upgrade-artifact-linux-arm cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
+
+    - name: Build Linux arm64
+      env:
+        GOOS: linux
+        GOARCH: arm64
+      run: |
+        go build -o gitlab-upgrade-artifact-linux-arm64 cmd/gitlab-upgrade-artifact/gitlab-upgrade-artifact.go
+
+    - name: 'Upload Linux Artifact Amd64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitlab-upgrade-artifact-linux-amd64
+        path: gitlab-upgrade-artifact-linux-amd64
+        retention-days: 5
+
+    - name: 'Upload Linux Artifact i386'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitlab-upgrade-artifact-linux-i386
+        path: gitlab-upgrade-artifact-linux-i386
+        retention-days: 5
+
+    - name: 'Upload Linux Artifact arm'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitlab-upgrade-artifact-linux-arm
+        path: gitlab-upgrade-artifact-linux-arm
+        retention-days: 5
+
+    - name: 'Upload Linux Artifact arm64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitlab-upgrade-artifact-linux-arm64
+        path: gitlab-upgrade-artifact-linux-arm64
+        retention-days: 5
+
