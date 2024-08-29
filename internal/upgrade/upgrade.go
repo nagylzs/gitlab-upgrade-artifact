@@ -144,12 +144,13 @@ func (u *Upgrader) fileChanged(commit JobListCommit) (bool, error) {
 	defer jsonFile.Close()
 	data, err := io.ReadAll(jsonFile)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("could not read data from %v: %w", u.jobFile, err)
 	}
 	var commitOld JobListCommit
 	err = json.Unmarshal(data, &commitOld)
 	if err != nil {
-		return false, err
+		slog.Warn("Could not unmarshal json file, assuming CHANGED", "path", u.jobFile, "err", err)
+		return true, err
 	}
 	slog.Info("Old commit", "created_at", commit.CreatedAt, "hash", commitOld.Id, "message", commitOld.Message)
 	slog.Info("New commit", "created_at", commit.CreatedAt, "hash", commit.Id, "message", commit.Message)
